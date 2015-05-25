@@ -84,6 +84,10 @@ def quitter( cmd ): ###
             print( "Il reste %i navires à couler."%len(navires-tirs) )
             return False
 
+#
+# def position_user():
+#
+
 def jouer():
     afficher_nouvelle_mer() # Oui on voit tout. Ce n'est pas un jeu, c'est un exercice
     cmd = None ###
@@ -131,7 +135,7 @@ def jouer_2():
                     afficher_mer()
                 else: print( "Entrez une commande valide (1 lettre + chiffres)" )
             except:
-                if quitter_ok(cmd): raise SystemExit
+                if quitter(cmd): raise SystemExit
         print( "\n\n === GAME OVER ===\n" )
 #jouer_2()
 
@@ -140,7 +144,7 @@ def jouer_3():
     # "Programmation lettrée"
     # http://fr.wikipedia.org/wiki/Programmation_lettrée (de Donald Knuth)
     def on_veut_jouer():                       return True
-    def on_veut_quitter():                     return quitter_ok(cmd)
+    def on_veut_quitter():                     return quitter(cmd)
     def tous_les_navires_ne_sont_pas_coulés(): return navires-tirs!=set()
     def demander_une_commande():               return input("Entrez une commande: ")
     def commande_vide():                       return cmd==''
@@ -159,6 +163,7 @@ def jouer_3():
                 tirer()
                 afficher_mer()
             else: print( "Entrez une commande valide (1 lettre + chiffres)" )
-        if commande_vide(): break # pour propager le break précédent à l'autre while
+        if commande_vide(): break     # pour propager le break précédent à l'autre while
+        # if on_veut_quitter(): break # marche aussi bien pour propager
         print( "\n\n === GAME OVER ===\n" )
 #jouer_3()
