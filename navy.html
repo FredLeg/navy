@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ツ Navy</title>
+  <meta charset="utf-8">
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+  <style>
+    body {
+      background-color: #f0f0f2;
+      margin: 0;
+      padding: 0;
+      }
+    pre {
+      width: 390px;
+      height: 330px;
+      margin: 2em auto;
+      padding: 50px;
+      background-color: #fff;
+      border-radius: 1em;
+      font-size: 2em;
+      text-align: center;
+      }
+    #console {
+      background-color: rvba(1,1,1,0);
+      height: auto;
+      padding: 0 50px;
+      margin: 2em auto;
+      font-family: monospace;
+      font-size: 2em;
+      text-align: center;
+      }
+    div {
+      margin: 0;
+      padding: 0;
+      }
+    #msg {
+      font-size: 1em;
+      }
+    #cmd {
+      font-size: 2em;
+      }
+    .us { /* unselectable ...marche pas */
+      -moz-user-select: none;
+      -khtml-user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      }
+  </style>
+</head>
+<body class=".us">
+
+  <pre id="mer"></pre>
+  <div id="console"><div id="msg"></div><div id="cmd"></div></div>
+
+<script>
+  function Position( iLig, iCol ){ // objet Position
+    this.iLig = ( iLig===undefined ? null : iLig );
+    this.iCol = ( iCol===undefined ? null : iCol );
+    this.isGood = function(){
+      return ( this.iLig !== null && this.iCol !== null );
+    };
+    this.isNoGood = function(){
+      return ( ! this.isGood() );
+    };
+    this.egale = function( position ){
+      return ( this.iLig == position.iLig && this.iCol == position.iCol );
+    };
+    this.in = function( set ){
+      var set_length = set.length();
+      var position;
+      for (var i=0; i<set_length; i++) {
+        position = set.get(i);
+        if ( this.egale(position) ) return true;
+      }
+      return false;
+    };
+    this.toString = function(){
+      return '('+ this.iLig +','+ this.iCol +')';
+    };
+  }
+  function Set(){ // pseudo objet Ensemble
+    this.array = [];
+    this.length = function(){
+      return this.array.length;
+    };
+    this.get = function( indice ){
+      return this.array[indice];
+    };
+    this.contains = function( position ){
+      for (var i=0; i<this.array.length; i++) {
+        if (this.array[i].iLig==position.iLig && this.array[i].iCol==position.iCol) return true;
+      }
+      return false;
+    };
+    this.add = function( position ){
+      if ( ! position.isGood() ) return;
+      if ( ! this.contains( position ) ) this.array.push( position );
+    };
+    this.difference = function( set ){ // * this - set * en Python
+      var result = new Set();
+      var position;
+      for (var i=0; i<this.array.length; i++){
+        position = this.array[i];
+        if ( ! set.contains( position ) ) result.add( position );
+      }
+      return (result.length()==0) ? null : result;
+    };
+    this.toString = function(){
+      var txt = '{';
+      var p;
+      for (var i=0; i<this.array.length; i++){
+        p = this.array[i];
+        txt += '('+ p.iLig +','+ p.iCol +(i<this.array.length-1?'),':')');
+      }
+      return txt + '}';
+    };
+  }
+  function afficher_mer(){
+    var C;
+    var position;
+    var numLig;
+    var gtxt = ''; // Buffer pour le texte de la fonction print_mer
+    var print_mer = function( txt ){  gtxt += txt;  };
+    var clear_mer = function( txt ){  $mer.text( gtxt='' );  };
+    clear_mer();
+    for (var iLig=0; iLig<taille_mer; iLig++){
+      numLig = taille_mer - iLig;
+      print_mer( ' '+ ( numLig<10 ? ' '+numLig : ''+numLig ) +' ');
+      for (var iColon=0; iColon<taille_mer; iColon++){
+        position = new Position(iColon,iLig);
+        C = ' ';
+        if (position.in( navires ) && show_navy )          C = 'O'; // Navire
+        if (position.in( tirs ))                           C = '^'; // A l'eau
+        if (position.in( navires ) && position.in( tirs )) C = 'X'; // Coulé
+        print_mer( C+' ' );
+      }
+      print_mer('\n');
+    }
+    print_mer('    ');
+    var ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (var i=0;i<taille_mer; i++) print_mer( ALPHA[i]+' ' );
+    $mer.text( gtxt );
+  }
+  function randInt( max ){
+    // un entier dans [0,max]
+    return Math.floor(Math.random()*(max+1));
+  }
+  function placer_navires(){
+    for (var _=0; _<nbr_navires; _++){ //### _ pratique pour signifier que cette variable n'est pas utilisée
+      position = new Position();
+      do {
+        position.iLig = randInt(taille_mer-1);
+        position.iCol = randInt(taille_mer-1);
+      } while ( position.in(navires))
+      navires.add( position );
+    }
+  }
+  function afficher_nouvelle_mer(){
+      navires = new Set();
+      tirs    = new Set();
+      placer_navires();
+      afficher_mer();
+  }
+  function coordonnees(cmd){
+    var bad_position = new Position();
+    if ( cmd===undefined )                            return undefined;
+    var iColon = cmd.charCodeAt(0)-'A'.charCodeAt(0);
+    if ( Number.isNaN(iColon) )                       return bad_position;
+    var val = cmd.substr(1)/1; // * /1 * mieux que parseInt()
+    if ( !Number.isInteger(val) )                     return bad_position;
+    var iLigne = taille_mer - val;
+    if ( iColon > taille_mer || iLigne > taille_mer ) return bad_position;
+    if ( iColon < 0 || iLigne < 0 )                   return bad_position;
+    return new Position(iColon,iLigne);
+  }
+  function input_jouer( message ){
+    if ( message !== undefined ) $msg.html( message );
+    $(document).on('keypress',function(e) {
+      if( e.which == 13 ) { // Touche [Entrée]
+        $(document).off('keypress');
+        jouer( $cmd.text().toUpperCase() );
+        $cmd.text( '' );
+      } else {
+        $cmd.text( $cmd.text()+String.fromCharCode(e.which) );
+      }
+    });
+  }
+  function jouer( cmd ){
+    // Beaucoup moins élégant qu'en Python
+    var position = coordonnees( cmd );
+    console.log( "Position: "+ position );
+    if ( position === undefined ){
+      afficher_nouvelle_mer();
+      input_jouer( "Pour jouer, entrez une commande<br>\
+      Une lettre et un numéro puis [Entrée]" );
+    } else {
+      if ( position.isGood() ){
+        tirs.add( position );
+        afficher_mer();
+        if ( navires.difference(tirs) === null ){
+          input_jouer( "=== GAME OVER ===<br>[Entrée] pour rejouer" );
+        } else {
+          input_jouer( "Entrez une commande" );
+        }
+      } else {
+        if ( navires.difference(tirs) === null ){
+          if ( cmd == '' ){
+            afficher_nouvelle_mer();
+            input_jouer( "Entrez une commande" );
+          } else {
+            input_jouer();
+          }
+        } else {
+          input_jouer( "Entrez une commande valide<br>(Une lettre et un numéro)" )
+        }
+      }
+    }
+    console.log( "\tNavires: "+ navires );
+    console.log( "\tTirs: "+ tirs );
+    console.log( "\tDifference: "+ navires.difference(tirs) );
+  }
+
+  var taille_mer  = 10;   // <= à 26
+  var nbr_navires = 5;    // <<= à taille_mer²
+  var show_navy   = true; // Oui on voit tout. Ce n'est pas un jeu, juste un exercice
+  var navires;
+  var tirs;
+
+  var $mer; // Où l'on affiche la mer
+  var $msg; //  "   "     "    les messages
+  var $cmd; //  "   "     "    la commande
+
+  $(function(){
+    $mer = $('#mer');
+    $msg = $('#msg');
+    $cmd = $('#cmd');
+    jouer();
+  });
+
+
+</script>
+</body>
+</html>
